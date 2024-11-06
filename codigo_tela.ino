@@ -53,6 +53,7 @@ void tela_RFID() {
 TFT_WHITE, "Gravar", 2);
   botao_Copia_RFID.init(&tela, &touch, 180, 160, 100, 110, TFT_BLACK, TFT_RED,
 TFT_WHITE, "Copiar", 2);
+  botao_Grava_RFID.setPressHandler(goto_Tela_Lista_Grava_RFID);
 }
 
 void goto_Tela_Infra(JKSButton &botao_Infra) {
@@ -73,13 +74,13 @@ void goto_Tela_Lista_Grava_RFID(JKSButton &botao_Grava_RFID) {
 }
 void tela_Lista_Grava_RFID() {
   tela.fillScreen(TFT_BLACK);
-  tela.setCursor(20, 100);
+  tela.setCursor(20, 20);
   tela.setTextColor(TFT_WHITE);
-  tela.setTextSize(4);
+  tela.setTextSize(2);
   tela.print("Lista de RFIDs");
 
-  botaoRFID_Lista_ex.init(&tela, &touch, 65, 160, 50, 100, TFT_BLACK, TFT_RED,
-TFT_WHITE, "RFID ex...", 2);
+  botaoRFID_Lista_ex.init(&tela, &touch, 85, 80, 150, 40, TFT_BLACK, TFT_RED,
+TFT_WHITE, "RFID ex1...", 2);
 }
 
 
