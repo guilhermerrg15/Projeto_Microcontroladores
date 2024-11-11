@@ -8,13 +8,14 @@ TouchScreen touch(6, A1, A2, 7, 300);
 JKSButton botao_RFID, botao_Infra, botao_Grava_RFID, botao_Copia_RFID,
 botao_Grava_Infra, botao_Emite_Infra, botaoRFID_Lista_ex, botaoInfra_Lista_ex,
 botao_Proximo_2_1_2, botao_Proximo_2_2, botao_Encerra_2_1_3, botao_Renomeia_ID,
-botao_Termina_3_1_2, botao_Proximo_3_2, botao_Encerra_3_2_2;
+botao_Termina_3_1_2, botao_Proximo_3_2, botao_Proximo_3_2_2, botao_Sim_3_2_3,
+botao_Nao_3_2_3, botao_Volta_Tela_1;
 
 enum {
   Tela_1, Tela_2, Tela_2_1,
   Tela_2_1_2, Tela_2_1_3, Tela_2_2,
   Tela_2_2_2, Tela_3, Tela_3_1, Tela_3_1_2, Tela_3_2,
-  Tela_3_2_2
+  Tela_3_2_2, Tela_3_2_3
    };
 
 int idx_tela = Tela_1;
@@ -33,6 +34,7 @@ void loop() {
   if (idx_tela == Tela_2) {
     botao_Grava_RFID.process();
     botao_Copia_RFID.process();
+    botao_Volta_Tela_1.process();
   }
   if(idx_tela == Tela_2_1_2) {
     botao_Proximo_2_1_2.process();
@@ -63,8 +65,31 @@ void loop() {
     botao_Proximo_3_2.process();
   }
   if(idx_tela == Tela_3_2_2) {
-    botao_Encerra_3_2_2.process();
+    botao_Proximo_3_2_2.process();
   }
+  if(idx_tela == Tela_3_2_3) {
+    botao_Sim_3_2_3.process();
+    botao_Nao_3_2_3.process();
+  }
+}
+
+void goto_tela_3_2_3(JKSButton &botao_Proximo_3_2_2) {
+  idx_tela = Tela_3_2_3;
+  tela_3_2_3();
+}
+
+void tela_3_2_3() {
+  tela.fillScreen(TFT_BLACK);
+  tela.setCursor(30, 100);
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(2);
+  tela.print("Deseja pressionar \n   outra tecla?");
+  botao_Sim_3_2_3.init(&tela, &touch, 160, 220, 60, 50, TFT_BLACK, TFT_RED,
+TFT_WHITE, "Sim", 2);
+  botao_Nao_3_2_3.init(&tela, &touch, 80, 220, 60, 50, TFT_BLACK, TFT_RED,
+TFT_WHITE, "Nao", 2);
+  botao_Sim_3_2_3.setPressHandler(goto_tela_3_2);
+  botao_Nao_3_2_3.setPressHandler(goto_tela_1);
 }
 
 void goto_tela_3_2_2(JKSButton &botao_Proximo_3_2) {
@@ -74,9 +99,13 @@ void goto_tela_3_2_2(JKSButton &botao_Proximo_3_2) {
 
 void tela_3_2_2() {
   tela.fillScreen(TFT_BLACK);
-  botao_Encerra_3_2_2.init(&tela, &touch, 180, 300, 120, 30, TFT_BLACK, TFT_RED,
-TFT_WHITE, "Encerrar", 2);
-  botao_Encerra_3_2_2.setPressHandler(goto_tela_1);
+  tela.setCursor(30, 150);
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(2);
+  tela.print("Escolha a tecla");
+  botao_Proximo_3_2_2.init(&tela, &touch, 180, 300, 120, 30, TFT_BLACK, TFT_RED,
+TFT_WHITE, "Proximo", 2);
+  botao_Proximo_3_2_2.setPressHandler(goto_tela_3_2_3);
 }
 
 void goto_tela_3_2(JKSButton &botao_Grava_Infra) {
@@ -86,10 +115,10 @@ void goto_tela_3_2(JKSButton &botao_Grava_Infra) {
 
 void tela_3_2() {
   tela.fillScreen(TFT_BLACK);
-  tela.setCursor(60, 150);
+  tela.setCursor(30, 150);
   tela.setTextColor(TFT_WHITE);
   tela.setTextSize(2);
-  tela.print("Aproxime\n   para gravar...");
+  tela.print("Aperte a tecla\n   para gravar...");
   botao_Proximo_3_2.init(&tela, &touch, 180, 300, 120, 30, TFT_BLACK, TFT_RED,
 TFT_WHITE, "Proximo", 2);
   botao_Proximo_3_2.setPressHandler(goto_tela_3_2_2);
@@ -231,8 +260,12 @@ void tela_2() {
 TFT_WHITE, "Gravar", 2);
   botao_Copia_RFID.init(&tela, &touch, 180, 160, 100, 110, TFT_BLACK, TFT_RED,
 TFT_WHITE, "Copiar", 2);
+  botao_Volta_Tela_1.init(&tela, &touch, 180, 280, 90, 30, TFT_BLACK, TFT_RED,
+TFT_WHITE, "Voltar", 2);
+
   botao_Grava_RFID.setPressHandler(goto_tela_2_1);
   botao_Copia_RFID.setPressHandler(goto_tela_2_2);
+  botao_Volta_Tela_1.setPressHandler(goto_tela_1);
 }
 
 void goto_tela_1(JKSButton &botao_Termina_3_1_2) {
