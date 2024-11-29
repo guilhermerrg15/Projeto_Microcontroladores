@@ -89,6 +89,7 @@ struct tecla {
     int y;
   };
 
+tecla lista_teclas[26];
 
 void setup() {
 
