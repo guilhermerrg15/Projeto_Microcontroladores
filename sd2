@@ -1,0 +1,123 @@
+#include <SPI.h>
+#include <SdFat.h>
+#include <Adafruit_GFX.h>
+#include <MCUFRIEND_kbv.h>
+#include <JKSButton.h>
+#include <string.h>
+
+MCUFRIEND_kbv tela;
+SdFatSoftSpi<12, 11, 13> SD;
+TouchScreen touch(6, A1, A2, 7, 300);
+JKSButton botaoinfra;
+JKSButton botaorfid;
+File jsonFile;
+int cont = 0;
+struct BotaoArquivo {
+  JKSButton botao;
+  char nomeArquivo[13];
+};
+BotaoArquivo botoes[10];
+
+void initializeSD() {
+  if (!SD.begin(10)) {
+    Serial.println("Erro ao inicializar o cartão SD!");
+    while (true)
+      ;
+  }
+  Serial.println("Cartão SD inicializado.");
+}
+
+void readDir(const char* caminho) {
+  tela.fillScreen(TFT_BLACK);
+  File diretorio;
+
+  if (!diretorio.open("/")) {
+    Serial.print("Erro ao abrir o diretório: ");
+    return;
+  }
+  //fazer for
+  /*
+  for (int n = 0; n < cont; n++) {
+    String c = String(n);
+    String caminhotot = String(caminho) + "rfidArq" + c;
+    Serial.println(caminhotot);
+    //jsonFile = SD.open(F(caminhotot));
+  }
+  */
+  tela.fillScreen(TFT_BLACK);
+  while (jsonFile.openNext(&diretorio, O_RDONLY)) {
+    Serial.println("AQUI2");
+    if (cont >= 10) break;
+    jsonFile.getName(botoes[cont].nomeArquivo, sizeof(botoes[cont].nomeArquivo));
+    //unsigned long address =
+    int y = 50 + cont * 50;
+    botoes[cont].botao.init(&tela, &touch, 100, y, 140, 30, TFT_WHITE, TFT_RED, TFT_BLACK, botoes[cont].nomeArquivo, 2);
+    botoes[cont].botao.setPressHandler(readJsonFile);
+    //readJsonFile(botoes[cont].nomeArquivo);
+    Serial.println(botoes[cont].nomeArquivo);
+
+    jsonFile.close();
+    cont++;
+  }
+
+  int x = diretorio.getError();
+
+  diretorio.close();
+}
+
+void readJsonFile(JKSButton& button) {
+  tela.fillScreen(TFT_BLACK);
+  if (SD.exists(botoes[cont].nomeArquivo)) {
+    if (jsonFile.open(botoes[cont].nomeArquivo)) {
+      Serial.print("Abrindo arquivo: ");
+      Serial.println(botoes[cont].nomeArquivo);
+      while (jsonFile.available()) {
+        // String line = jsonFile.readStringUntil('\n');
+        // Serial.println("Opção: " + line);
+        int y = 10 + cont * 50;
+        int ycursor = 15 + cont * 50;
+        jsonFile.printName(&Serial);
+        tela.fillRect(10, y, 140, 30, TFT_RED);
+        tela.setCursor(20, ycursor);
+        tela.setTextColor(TFT_BLACK);
+        tela.setTextSize(2);
+        //tela.print(line);
+      }
+      jsonFile.close();
+    } else {
+      Serial.println("Erro ao abrir o arquivo.");
+    }
+  } else {
+    Serial.println("Arquivo não encontrado.");
+  }
+}
+
+void escolhainfra() {
+  readDir("/infra");
+}
+
+void escolharfid() {
+  readDir("/rfid");
+}
+
+void setup() {
+  Serial.begin(9600);
+  initializeSD();
+  tela.begin(tela.readID());
+  tela.fillScreen(TFT_BLACK);
+
+  botaoinfra.init(&tela, &touch, 100, 50, 140, 30, TFT_WHITE, TFT_RED, TFT_BLACK, "infra", 2);
+  botaoinfra.setPressHandler(escolhainfra);
+
+  botaorfid.init(&tela, &touch, 100, 100, 140, 30, TFT_WHITE, TFT_RED, TFT_BLACK, "rfid", 2);
+  botaorfid.setPressHandler(escolharfid);
+}
+
+void loop() {
+  for (int n = 0; n < cont; n++) {
+    //Serial.println(all_buttons[n].parameter);
+    botoes[n].botao.process();
+  }
+  botaoinfra.process();
+  botaorfid.process();
+}
