@@ -38,6 +38,7 @@ char namebuf[32] = "/";
 
 File root;
 int pathlen;
+File myFile;
 
 uint16_t read16(File &f) {
   uint16_t result;
@@ -71,6 +72,7 @@ int idx_tela = Tela_1;
 
 void setup() {
   Serial.begin(9600);
+  Serial.println("inicio\n");
   tela.begin(tela.readID());
   tela_1();
 
@@ -83,14 +85,16 @@ void setup() {
   bool good = SD.begin(SD_CS);
   if (!good) {
     Serial.print("cannot start SD");
-    //while(1);
   }
   root = SD.open(namebuf);
   pathlen = strlen(namebuf);
+
+  
 }
 
 bool lerDoArq(char *nomeArq, byte *uid) {
   File file = SD.open(nomeArq);
+  Serial.println("Abriu arq");
   if (!file) {
     Serial.println("Erro ao abrir arquivo");
     return false;
@@ -98,17 +102,20 @@ bool lerDoArq(char *nomeArq, byte *uid) {
   String rfid = "";
   int i = 0;
   while (file.available()) {
-    String linha = file.readStringUntil("\n");
+    String linha = file.readStringUntil('\n');
     linha.trim();
-    uid[i] = linha.toInt();
-    Serial.print(uid[i] < 0x10 ? " 0" : " ");
+    uid[i] = (byte) linha.toInt();
+    
     rfid += uid[i] < 0x10 ? " 0" : " ";
     rfid += String(uid[i], HEX);
     i++;
+    if (i > 3) {
+      break;
+    }
   }
-  Serial.println(rfid);
+  Serial.println("RFID: " + rfid);
   file.close();
-  if (rfid.length() != 8) {
+  if (rfid.length() != 12) {
     Serial.println("RFID inválido no arquivo");
     return false;
   }
@@ -131,34 +138,63 @@ void loop() {
     botao_Copia_RFID.process();
     botao_Volta_Tela_1.process();
   }
-  if (idx_tela == Tela_2_1_2 && mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
-    if (mfrc522.MIFARE_SetUid(NEW_UID, (byte)4, true)) {
+  if (idx_tela == Tela_2_1_2) {
+    //Serial.println(mfrc522.PICC_IsNewCardPresent());
+    if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+      Serial.println("Entrou na condicao");
+      if (mfrc522.MIFARE_SetUid(NEW_UID, (byte)4, true)) {
       Serial.println(F("Novo UID gravado no cartão."));
+      idx_tela = Tela_2_1_3;
+      tela_2_1_3();
     } else {
       Serial.println(F("Falha ao gravar o novo UID."));
     }
     mfrc522.PICC_HaltA();
-    delay(1000);
+    }
+    
+    //delay(1000);
 
-    idx_tela = Tela_2_1_3;
-    tela_2_1_3();
-    botao_Proximo_2_1_2.process();
+    
+    //botao_Proximo_2_1_2.process();
   }
 
   if (idx_tela == Tela_2_1_3) {
     botao_Encerra_2_1_3.process();
   }
 
-  if (idx_tela == Tela_2_2 && mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
-    rfidHex = "";
-    for (byte i = 0; i < mfrc522.uid.size; i++) {
-      Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-      rfidHex += mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ";
-      rfidHex += String(mfrc522.uid.uidByte[i], HEX);
+   if (idx_tela == Tela_2_2) {
+    if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+      Serial.println(mfrc522.PICC_IsNewCardPresent());
+      Serial.println(mfrc522.PICC_ReadCardSerial());
+      rfidHex = "";
+
+      myFile = SD.open("guilherme.txt", O_WRITE);
+      if (myFile) {
+        Serial.println("Arquivo guilherme.txt aberto ou criado com sucesso.");
+        
+        // Grava os dados no arquivo
+        for (byte i = 0; i < mfrc522.uid.size; i++) {
+          rfidHex += mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ";
+          rfidHex += String(mfrc522.uid.uidByte[i], HEX);
+
+          // Escreve no arquivo
+          myFile.print(mfrc522.uid.uidByte[i]);
+          myFile.print("\n");
+          Serial.println("oi");
+          Serial.println(mfrc522.uid.uidByte[i]);
+        }
+        myFile.println(); // Adiciona uma nova linha no final
+        myFile.close();   // Fecha o arquivo
+        Serial.println("\nDados escritos em guilherme.txt");
+        
+      } else {
+        Serial.println("Erro ao abrir ou criar o arquivo guilherme.txt");
+      }
+
+      idx_tela = Tela_2_2_2;
+      tela_2_2_2();
+      botao_Proximo_2_2.process();
     }
-    idx_tela = Tela_2_2_2;
-    tela_2_2_2();
-    botao_Proximo_2_2.process();
   }
 
   if (idx_tela == Tela_2_2_2) {
@@ -328,7 +364,7 @@ void goto_tela_2_1_3(JKSButton &botao_Renomeia_ID) {
 
 void tela_2_1_3() {
 
-  if (!lerDoArq("ex1.txt", NEW_UID)) {
+  if (!lerDoArq("guilherme.txt", NEW_UID)) {
     Serial.println(F("Erro ao ler o arquivo ou RFID inválido."));
     return;
   } else {
@@ -358,36 +394,12 @@ void tela_2_1_3() {
 
 void goto_tela_2_1_2(JKSButton &botao_Proximo_2_1_2) {
   idx_tela = Tela_2_1_2;
-
+  lerDoArq("/guilherme.txt", NEW_UID);
   tela_2_1_2();
 }
 
 void tela_2_1_2() {
-  //File file = SD.open("ex1.txt");
-  //if (!file) {
-  //  tela.fillScreen(TFT_BLACK);
-  //  tela.setCursor(20, 20);
-  //  tela.setTextColor(TFT_RED);
-  //  tela.setTextSize(2);
-  //  tela.print("Erro ao abrir o arquivo");
-  //  delay(2000);
-  // return;
-  //}
-  //String rfid = "";
-  //while (file.available()) {
-  // String line = file.readStringUntil('\n');
-  // line.trim();
-  // rfid += line;
-  //}
-  //file.close();
-  // tela.fillScreen(TFT_BLACK);
-  // tela.setCursor(20, 20);
-  // tela.setTextColor(TFT_GREEN);
-  // tela.setTextSize(2);
-  // tela.print("RFID:");
-  // tela.setCursor(20, 60);
-  // tela.setTextSize(2);
-  // tela.print(rfid);
+  
   tela.fillScreen(TFT_BLACK);
   tela.setCursor(60, 150);
   tela.setTextColor(TFT_WHITE);
