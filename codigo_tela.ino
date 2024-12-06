@@ -36,9 +36,26 @@ SdFatSoftSpi<12, 11, 13> SD;
 
 char namebuf[32] = "/";
 
-File root;
+File diretorio;
 int pathlen;
 File myFile;
+JKSButton botaorfid;
+String caminhoarq;
+int cont = 0;
+
+String listaLetras[27] ={"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z", "ENT"};
+String textoFinal = "";
+JKSButton listaBotoes[27];
+JKSButton resultado;
+
+int x = 0;
+int y = 32;
+
+struct BotaoArquivo {
+  JKSButton botao;
+  char nomeArquivo[20];
+};
+BotaoArquivo botoes[10];
 
 uint16_t read16(File &f) {
   uint16_t result;
@@ -60,6 +77,7 @@ enum {
   Tela_2_1_3,
   Tela_2_2,
   Tela_2_2_2,
+  Tela_2_2_3,
   Tela_3,
   Tela_3_1,
   Tela_3_1_2,
@@ -86,19 +104,65 @@ void setup() {
   if (!good) {
     Serial.print("cannot start SD");
   }
-  root = SD.open(namebuf);
+  diretorio = SD.open(namebuf);
   pathlen = strlen(namebuf);
-
   
 }
 
+void readDir(const char* caminho) {
+  idx_tela = 2;
+  caminhoarq = caminho;
+  tela.fillScreen(TFT_BLACK);
+  cont = 0;
+  diretorio = SD.open(caminho);
+  if (!diretorio) {
+    Serial.print("Erro ao abrir o diretório: ");
+    Serial.println(caminho);
+    return;
+  }
+  while (true) {
+    File entrada = diretorio.openNextFile();
+    if (!entrada) break;
+    if (cont >= 20) break;
+    if (!entrada.isDirectory()) {
+      entrada.getName(botoes[cont].nomeArquivo, sizeof(botoes[cont].nomeArquivo));
+      int y = 50 + cont * 50;
+      botoes[cont].botao.init(&tela, &touch, 100, y, 140, 30, TFT_WHITE, TFT_RED, TFT_BLACK, botoes[cont].nomeArquivo, 2);
+      botoes[cont].botao.setPressHandler([](JKSButton& btn) {
+        readRFIDFile(btn);
+      });
+      Serial.println(botoes[cont].nomeArquivo);
+      cont++;
+    }
+    entrada.close();
+  }
+  diretorio.close();
+}
+
+void readRFIDFile(JKSButton& button) {
+  
+  for(int i = 0; i < cont; i++) {
+    if(&botoes[i].botao == &button) {
+      lerDoArq(botoes[i].nomeArquivo, NEW_UID);
+    }
+  }
+  idx_tela = Tela_2_1_2;
+  tela_2_1_2();
+}
+
 bool lerDoArq(char *nomeArq, byte *uid) {
-  File file = SD.open(nomeArq);
-  Serial.println("Abriu arq");
+  
+  char caminho[30] = "";
+  strcat(caminho, "/rfid/");
+  strcat(caminho, nomeArq);
+  File file = SD.open(caminho);
+  Serial.println(file);
+  
   if (!file) {
     Serial.println("Erro ao abrir arquivo");
     return false;
   }
+  Serial.println("Abriu arq");
   String rfid = "";
   int i = 0;
   while (file.available()) {
@@ -112,6 +176,7 @@ bool lerDoArq(char *nomeArq, byte *uid) {
     if (i > 3) {
       break;
     }
+
   }
   Serial.println("RFID: " + rfid);
   file.close();
@@ -139,7 +204,6 @@ void loop() {
     botao_Volta_Tela_1.process();
   }
   if (idx_tela == Tela_2_1_2) {
-    //Serial.println(mfrc522.PICC_IsNewCardPresent());
     if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
       Serial.println("Entrou na condicao");
       if (mfrc522.MIFARE_SetUid(NEW_UID, (byte)4, true)) {
@@ -152,10 +216,6 @@ void loop() {
     mfrc522.PICC_HaltA();
     }
     
-    //delay(1000);
-
-    
-    //botao_Proximo_2_1_2.process();
   }
 
   if (idx_tela == Tela_2_1_3) {
@@ -170,7 +230,7 @@ void loop() {
 
       myFile = SD.open("guilherme.txt", O_WRITE);
       if (myFile) {
-        Serial.println("Arquivo guilherme.txt aberto ou criado com sucesso.");
+        Serial.println("Arquivo guilherme.txt aberto / criado com sucesso.");
         
         // Grava os dados no arquivo
         for (byte i = 0; i < mfrc522.uid.size; i++) {
@@ -205,7 +265,9 @@ void loop() {
     botao_Emite_Infra.process();
   }
   if (idx_tela == Tela_2_1) {
-    botaoRFID_Lista_ex.process();
+    for (int n = 0; n < cont; n++) {
+      botoes[n].botao.process();
+    }
   }
   if (idx_tela == Tela_3_1) {
     botaoInfra_Lista_ex.process();
@@ -412,18 +474,12 @@ void tela_2_1_2() {
 
 void goto_tela_2_1(JKSButton &botao_Grava_RFID) {
   idx_tela = Tela_2_1;
+  
   tela_2_1();
 }
 void tela_2_1() {
-  tela.fillScreen(TFT_BLACK);
-  tela.setCursor(20, 20);
-  tela.setTextColor(TFT_WHITE);
-  tela.setTextSize(2);
-  tela.print("Lista de RFIDs");
+  readDir("/rfid");
 
-  botaoRFID_Lista_ex.init(&tela, &touch, 85, 80, 150, 40, TFT_BLACK, TFT_RED,
-                          TFT_WHITE, "RFID ex1...", 2);
-  botaoRFID_Lista_ex.setPressHandler(goto_tela_2_1_2);
 }
 
 void goto_tela_2(JKSButton &botao_RFID) {
