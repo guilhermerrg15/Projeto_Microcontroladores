@@ -1,2 +1,2 @@
 # Projeto_Microcontroladores
-Projeto Final da disciplina de Projetos de Microcontroladores 2024.1
+Projeto Final da disciplina de Projetos de Microcontroladores 2024.2
