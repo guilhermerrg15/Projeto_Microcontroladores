@@ -20,7 +20,7 @@ String content = "";
 
 MCUFRIEND_kbv tela;
 TouchScreen touch(6, A1, A2, 7, 300);
-JKSButton botao_RFID, botao_Infra, botao_Grava_RFID, botao_Copia_RFID,
+JKSButton botao_RFID, botao_Iniciar, botao_Infra, botao_Grava_RFID, botao_Copia_RFID,
   botao_Grava_Infra, botao_Emite_Infra, botaoRFID_Lista_ex, botaoInfra_Lista_ex,
   botao_Proximo_2_1_2, botao_Proximo_2_2, botao_Encerra_2_1_3, botao_Renomeia_ID,
   botao_Termina_3_1_2, botao_Proximo_3_2, botao_Proximo_3_2_2, botao_Sim_3_2_3,
@@ -70,6 +70,7 @@ uint32_t read32(File &f) {
 }
 
 enum {
+  Tela_Inicial,
   Tela_1,
   Tela_2,
   Tela_2_1,
@@ -86,7 +87,7 @@ enum {
   Tela_3_2_3
 };
 
-int idx_tela = Tela_1;
+int idx_tela = Tela_Inicial;
 
 void setup() {
   Serial.begin(9600);
@@ -191,10 +192,13 @@ bool lerDoArq(char *nomeArq, byte *uid) {
 
 void loop() {
 
-  //fazer showbmp em uma tela antes da tela 1 (tela de inicio)
+  
+  if (idx_tela == Tela_Inicial) {
+    //showBMP('logo.bmp', 5, 5); colocar logo no sd card
+    botao_Iniciar.process();
+  }
 
   if (idx_tela == Tela_1) {
-    // Serial.println(showBMP("logo3.bmp", 5, 5));
     botao_RFID.process();
     botao_Infra.process();
   }
@@ -243,8 +247,8 @@ void loop() {
           Serial.println("oi");
           Serial.println(mfrc522.uid.uidByte[i]);
         }
-        myFile.println(); // Adiciona uma nova linha no final
-        myFile.close();   // Fecha o arquivo
+        myFile.println();
+        myFile.close();   
         Serial.println("\nDados escritos em guilherme.txt");
         
       } else {
@@ -488,8 +492,18 @@ void goto_tela_2(JKSButton &botao_RFID) {
 }
 void tela_2() {
   tela.fillScreen(TFT_BLACK);
+  tela.setCursor(65, 250);
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(1);
+  tela.print("Selecione um dispositivo da lista para gravar o seu RFID");
+
+  tela.setCursor(180, 250);
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(1);
+  tela.print("Copie o RFID de um dispositivo");
   botao_Grava_RFID.init(&tela, &touch, 65, 160, 100, 110, TFT_BLACK, TFT_RED,
                         TFT_WHITE, "Gravar", 2);
+                        
   botao_Copia_RFID.init(&tela, &touch, 180, 160, 100, 110, TFT_BLACK, TFT_RED,
                         TFT_WHITE, "Copiar", 2);
   botao_Volta_Tela_1.init(&tela, &touch, 180, 280, 90, 30, TFT_BLACK, TFT_RED,
@@ -513,6 +527,13 @@ void tela_1() {
                    TFT_WHITE, "Infravermelho", 1);
   botao_RFID.setPressHandler(goto_tela_2);
   botao_Infra.setPressHandler(goto_tela_3);
+}
+
+
+void tela_inicial() {
+    tela.fillScreen(TFT_BLACK);
+    botao_Iniciar.init(&tela, &touch, 100, 200, 70, 80, TFT_BLACK, TFT_RED, TFT_WHITE, 'Iniciar', 2);
+    botao_Iniciar.setPressHandler(goto_tela_1);
 }
 
 uint8_t showBMP(char *nm, int x, int y) {
