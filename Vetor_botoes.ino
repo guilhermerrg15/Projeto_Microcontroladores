@@ -7,6 +7,9 @@
 #include <SPI.h>
 #include <SdFat.h>
 
+#define IR_SEND_PIN 21
+#define IR_RECEIVE_PIN 20
+
 JKSButton botao[30];
 int totalBotoesNaTela = 0;
 char caminhoarq[8][15];
@@ -159,15 +162,58 @@ void tela_2() {
   botao[2].init(&tela, &touch, 180, 280, 90, 30, TFT_BLACK, TFT_RED,
                 TFT_WHITE, "Voltar", 2);
 
-  //botao[0].setPressHandler(goto_tela_2_1);
+  botao[0].setPressHandler(goto_tela_2_1);
   botao[1].setPressHandler(goto_tela_2_2);
   botao[2].setPressHandler(goto_tela_1);
   totalBotoesNaTela = 3;
 }
+
+void goto_tela_2_1(JKSButton &botao_Grava_RFID) {
+  idx_tela = Tela_2_1;
+  tela_2_1();
+}
+
+void tela_2_1() {
+  tela.fillScreen(TFT_BLACK);
+  tela.setCursor(20, 20);
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(2);
+  tela.print("Lista de RFIDs");
+
+  botao[0].init(&tela, &touch, 85, 80, 150, 40, TFT_BLACK, TFT_RED,
+                          TFT_WHITE, "RFID ex1...", 2);
+  botao[0].setPressHandler(goto_tela_2_1_2);
+  totalBotoesNaTela = 1;
+}
+
+void goto_tela_2_1_2(JKSButton &botao_Proximo_2_1_2) {
+  idx_tela = Tela_2_1_2;
+  tela_2_1_2();
+}
+
+
 void goto_tela_2_2(JKSButton &botao_Proximo_2_2) {
   idx_tela = Tela_2_2;
   tela_2_2();
 }
+
+void tela_2_1_2() {
+  tela.fillScreen(TFT_BLACK);
+  tela.setCursor(60, 150);
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(2);
+  tela.print("Aproxime\n   para gravar...");
+  botao[0].init(&tela, &touch, 180, 300, 120, 30, TFT_BLACK, TFT_RED,
+                           TFT_WHITE, "Proximo", 2);
+  botao[0].setPressHandler(goto_tela_2_1_3);
+  totalBotoesNaTela = 1;
+}
+
+void goto_tela_2_1_3(JKSButton &botao_Renomeia_ID) {
+  idx_tela = Tela_2_1_3;
+  tela_2_1_3();
+}
+
 void tela_2_2() {
   totalBotoesNaTela = 1;
   tela.fillScreen(TFT_BLACK);
@@ -178,6 +224,18 @@ void tela_2_2() {
   botao[0].init(&tela, &touch, 180, 300, 120, 30, TFT_BLACK, TFT_RED,
                          TFT_WHITE, "Proximo", 2);
   botao[0].setPressHandler(goto_tela_2_2_2);
+}
+
+void tela_2_1_3() {
+  tela.fillScreen(TFT_BLACK);
+  tela.setCursor(30, 150);
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(2);
+  tela.print("RFID registrado\n    com sucesso.");
+  botao[0].init(&tela, &touch, 180, 300, 120, 30, TFT_BLACK, TFT_RED,
+                           TFT_WHITE, "Encerrar", 2);
+  botao[0].setPressHandler(goto_tela_1);
+  totalBotoesNaTela = 1;
 }
 
 void goto_tela_2_2_2(JKSButton &botao_Renomeia_ID) {
@@ -258,10 +316,49 @@ void tela_3_2() {
   tela.setTextColor(TFT_WHITE);
   tela.setTextSize(2);
   tela.print("Aperte a tecla\n   para gravar...");
-  // botao_Proximo_3_2.init(&tela, &touch, 180, 300, 120, 30, TFT_BLACK, TFT_RED,
-  //                       TFT_WHITE, "Proximo", 2);
-  // botao_Proximo_3_2.setPressHandler(goto_tela_3_2_2);
+  botao[0].init(&tela, &touch, 180, 300, 120, 30, TFT_BLACK, TFT_RED,
+                         TFT_WHITE, "Proximo", 2);
+  botao[0].setPressHandler(goto_tela_3_2_2);
+  totalBotoesNaTela = 1;
 }
+
+void goto_tela_3_2_2(JKSButton &botao_Proximo_3_2) {
+  idx_tela = Tela_3_2_2;
+  tela_3_2_2();
+}
+
+void tela_3_2_2() {
+  tela.fillScreen(TFT_BLACK);
+  tela.setCursor(30, 150);
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(2);
+  tela.print("Escolha a tecla");
+  botao[0].init(&tela, &touch, 180, 300, 120, 30, TFT_BLACK, TFT_RED,
+                           TFT_WHITE, "Proximo", 2);
+  botao[0].setPressHandler(goto_tela_3_2_3);
+  totalBotoesNaTela = 1;
+}
+
+void goto_tela_3_2_3(JKSButton &botao_Proximo_3_2_2) {
+  idx_tela = Tela_3_2_3;
+  tela_3_2_3();
+}
+
+void tela_3_2_3() {
+  tela.fillScreen(TFT_BLACK);
+  tela.setCursor(30, 100);
+  tela.setTextColor(TFT_WHITE);
+  tela.setTextSize(2);
+  tela.print("Deseja pressionar \n   outra tecla?");
+  botao[0].init(&tela, &touch, 160, 220, 60, 50, TFT_BLACK, TFT_RED,
+                       TFT_WHITE, "Sim", 2);
+  botao[1].init(&tela, &touch, 80, 220, 60, 50, TFT_BLACK, TFT_RED,
+                       TFT_WHITE, "Nao", 2);
+  botao[0].setPressHandler(goto_tela_3_2);
+  botao[1].setPressHandler(goto_tela_1);
+  totalBotoesNaTela = 2;
+}
+
 
 void readDir(const char *caminho) {
   strcpy(nomePasta, caminho);
@@ -326,6 +423,11 @@ void readDir(const char *caminho) {
 }
 */
 
+void sendIR(JKSButton &button) {
+  Serial.println(button.parameter);
+  IrSender.sendNECRaw(button.parameter, 0);
+}
+
 
 void readJsonFile(JKSButton &button) {
   //char nomeArquivo[num_arquivo];
@@ -350,6 +452,8 @@ void readJsonFile(JKSButton &button) {
       Serial.print(F("Abrindo arquivo: "));
       Serial.println(caminhoarq[i]);
       tela.fillScreen(TFT_BLACK);
+      totalBotoesNaTela = 1;
+
       while (jsonFile.available()) {
         char line[30];
         jsonFile.readBytesUntil('\n', line, sizeof(line));
@@ -367,8 +471,7 @@ void readJsonFile(JKSButton &button) {
         botao[0].init(&tela, &touch, 180, 300, 100, 30, TFT_BLACK, TFT_RED,
                                       TFT_WHITE, "Terminar", 2);
         botao[0].setPressHandler(goto_tela_1);
-        totalBotoesNaTela = 1;
-
+        
         for (int i = 0; i < sizeof(lista_teclas) / sizeof(lista_teclas[0]); i++)  //size of gives the size in bytes so we do this to get the right size (26)
         {
 
@@ -419,7 +522,7 @@ void readJsonFile(JKSButton &button) {
             }
 
             botao[totalBotoesNaTela].parameter = address;
-            //botao[totalBotoesNaTela].setPressHandler(sendIR);
+            botao[totalBotoesNaTela].setPressHandler(sendIR);
 
 
             totalBotoesNaTela++;
