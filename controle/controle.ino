@@ -45,6 +45,9 @@ File jsonFile;
 File diretorio;
 File renamedFile;
 int pathlen;
+IRRawDataType rawdata = 0;
+unsigned long parametroAtual = 0;
+String JSONWrite = "";
 
 //WHAT IS THIS FOR?
 uint16_t read16(File &f) {
@@ -77,7 +80,8 @@ enum {
   Tela_3_1_2,
   Tela_3_2,
   Tela_3_2_2,
-  Tela_3_2_3
+  Tela_3_2_3,
+  Tela_3_2_4
 };
 
 int idx_tela = Tela_Inicial;
@@ -134,10 +138,11 @@ tecla lista_teclas[26] = {
 
 void setup() {
   Serial.begin(9600);
+  IrReceiver.begin(20, ENABLE_LED_FEEDBACK);
   IrSender.begin(21);
   initializeSD();
   tela.begin(tela.readID());
- // tela_2_2_3();
+  // tela_2_2_3();
   tela_inicial();
   SPI.begin();
   mfrc522.PCD_Init();
@@ -161,18 +166,18 @@ void loop() {
   for (int n = 0; n < totalBotoesNaTela; n++) {
     botao[n].process();
   }
-  
-    if (idx_tela == Tela_2_1_2) {
+
+  if (idx_tela == Tela_2_1_2) {
     if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
       Serial.println("Entrou na condicao");
       if (mfrc522.MIFARE_SetUid(NEW_UID, (byte)4, true)) {
-      Serial.println(F("Novo UID gravado no cartão."));
-      idx_tela = Tela_2_1_3;
-      tela_2_1_3();
-    } else {
-      Serial.println(F("Falha ao gravar o novo UID."));
-    }
-    mfrc522.PICC_HaltA();
+        Serial.println(F("Novo UID gravado no cartão."));
+        idx_tela = Tela_2_1_3;
+        tela_2_1_3();
+      } else {
+        Serial.println(F("Falha ao gravar o novo UID."));
+      }
+      mfrc522.PICC_HaltA();
     }
   }
   if (idx_tela == Tela_2_2) {
@@ -180,20 +185,80 @@ void loop() {
       Serial.println(mfrc522.PICC_IsNewCardPresent());
       Serial.println(mfrc522.PICC_ReadCardSerial());
       rfidHex = "";
-        // Grava os dados no arquivo
+      // Grava os dados no arquivo
       for (byte i = 0; i < mfrc522.uid.size; i++) {
         rfidHex += mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ";
         rfidHex += String(mfrc522.uid.uidByte[i], HEX);
         Serial.println(mfrc522.uid.uidByte[i]);
       }
-       
+
       Serial.println("\nDados escritos em guilherme.txt");
 
       idx_tela = Tela_2_2_2;
       tela_2_2_2();
     }
   }
+  if (idx_tela == Tela_3_2_4) {
+    botao[26].setPressHandler(goto_tela_2_2_3);
+    Serial.println("322");
+    if (IrReceiver.decode()) {
+      if (IrReceiver.decodedIRData.protocol == UNKNOWN) {
+        Serial.println(1);
+        rawdata = IrReceiver.decodedIRData.decodedRawData;
+      } else {
+        rawdata = IrReceiver.decodedIRData.decodedRawData;
+        tela.fillScreen(TFT_BLACK);
+        tela.setCursor(30, 150);
+        tela.println("Sinal Recebido!");
+        JSONWrite += "[\"" + String(parametroAtual) + "\","+ String(rawdata) + "]," + "\n";
+        tela.fillScreen(TFT_BLACK);
+        tela.setCursor(30, 150);
+        tela.println("Tecla Registrada!");
+        delay(200);
+        desenharBotoes();
+      }
+      Serial.println(rawdata);
+      Serial.println(parametroAtual);
+      IrReceiver.resume();
+    }
+  }
+}
 
+void desenharBotoes() {
+  tela.fillScreen(TFT_BLACK);
+
+  botao[0].init(&tela, &touch, 70, 160, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "0", 2);
+  botao[1].init(&tela, &touch, 25, 25, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "1", 2);
+  botao[2].init(&tela, &touch, 70, 25, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "2", 2);
+  botao[3].init(&tela, &touch, 115, 25, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "3", 2);
+  botao[4].init(&tela, &touch, 25, 70, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "4", 2);
+  botao[5].init(&tela, &touch, 70, 70, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "5", 2);
+  botao[6].init(&tela, &touch, 115, 70, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "6", 2);
+  botao[7].init(&tela, &touch, 25, 115, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "7", 2);
+  botao[8].init(&tela, &touch, 70, 115, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "8", 2);
+  botao[9].init(&tela, &touch, 115, 115, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "9", 2);
+  botao[10].init(&tela, &touch, 160, 70, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "ch+", 2);
+  botao[11].init(&tela, &touch, 160, 115, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "ch-", 2);
+  botao[12].init(&tela, &touch, 70, 205, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "^", 2);
+  botao[13].init(&tela, &touch, 70, 295, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "^", 2);
+  botao[14].init(&tela, &touch, 25, 250, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "<", 2);
+  botao[15].init(&tela, &touch, 115, 250, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, ">", 2);
+  botao[16].init(&tela, &touch, 25, 160, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "*", 2);
+  botao[17].init(&tela, &touch, 115, 160, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "#", 2);
+  botao[18].init(&tela, &touch, 70, 250, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "ok", 2);
+  botao[19].init(&tela, &touch, 205, 25, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "on/off", 1);
+  botao[20].init(&tela, &touch, 160, 160, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "V+", 2);
+  botao[21].init(&tela, &touch, 160, 205, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "V-", 2);
+  botao[22].init(&tela, &touch, 205, 70, 40, 40, TFT_BLACK, TFT_RED, TFT_RED, ".", 2);
+  botao[23].init(&tela, &touch, 205, 115, 40, 40, TFT_BLACK, TFT_GREEN, TFT_GREEN, ".", 2);
+  botao[24].init(&tela, &touch, 205, 160, 40, 40, TFT_BLACK, TFT_BLUE, TFT_BLUE, ".", 2);
+  botao[25].init(&tela, &touch, 205, 205, 40, 40, TFT_BLACK, TFT_YELLOW, TFT_YELLOW, ".", 2);
+  botao[26].init(&tela, &touch, 205, 245, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, "ENT", 2);
+  for (int i = 0; i < 27; i++) {
+    botao[i].setPressHandler(apertarBotaoControle);
+    botao[i].parameter = i;
+  }
+  totalBotoesNaTela = 27;
 }
 
 
@@ -203,7 +268,7 @@ void tela_inicial() {
   botao[0].init(&tela, &touch, 120, 250, 120, 75, TFT_BLACK, TFT_RED,
                 TFT_WHITE, "Iniciar", 2);
   botao[0].setPressHandler(goto_tela_1);
-  
+
   totalBotoesNaTela = 1;
 }
 
@@ -219,6 +284,7 @@ void tela_1() {
 }
 
 void goto_tela_1() {
+  idx_tela = Tela_1;
   tela_1();
 }
 
@@ -405,27 +471,38 @@ void tela_2_2_4() {
                 TFT_WHITE, "Voltar", 2);
   botao[0].setPressHandler(goto_tela_1);
   totalBotoesNaTela = 1;
+
 }
 
 void apertarBotao(JKSButton &button) {
-  
+
   int tecla = button.parameter;
+  
   if (tecla == 26) {
     Serial.println(textoFinal);
-    renamedFile = SD.open("/rfid/" + textoFinal + ".txt", O_CREAT | O_WRITE);
-    if (renamedFile) {
-      for (byte i = 0; i < mfrc522.uid.size; i++) {
-      renamedFile.print(mfrc522.uid.uidByte[i]);
-      renamedFile.print("\n");
-      }
-    } else {
-        Serial.println("Erro ao abrir ou criar o arquivo guilherme.txt");
+    if (rawdata != 0) {
+      Serial.println("a");
+      File meuJson = SD.open("/infra/" + textoFinal + ".json",O_CREAT | O_WRITE
+      );
+      meuJson.println(JSONWrite);
+      meuJson.close();
     }
-    renamedFile.println();
-    renamedFile.close();
+    else {
+      renamedFile = SD.open("/rfid/" + textoFinal + ".txt", O_CREAT | O_WRITE);
+      if (renamedFile) {
+        for (byte i = 0; i < mfrc522.uid.size; i++) {
+          renamedFile.print(mfrc522.uid.uidByte[i]);
+          renamedFile.print("\n");
+        }
+      } else {
+        Serial.println("Erro ao abrir ou criar o arquivo guilherme.txt");
+      }
+      renamedFile.println();
+      renamedFile.close();
+    }
     tela_2_2_4();
     //botao[27].init(&tela, &touch, 120, y + 80, 120, 64, TFT_BLACK, TFT_WHITE, TFT_RED, textoFinal.c_str(), 2);
-    
+
   } else {
     textoFinal = textoFinal + listaLetras[tecla];
     Serial.println(listaLetras[tecla]);
@@ -433,7 +510,6 @@ void apertarBotao(JKSButton &button) {
     tela.setTextColor(TFT_WHITE);
     tela.setTextSize(2);
     tela.print(textoFinal);
-
   }
   //botao[27].init(&tela, &touch, 120, y + 80, 120, 64, TFT_BLACK, TFT_WHITE, TFT_RED, textoFinal.c_str(), 2);
 }
@@ -470,15 +546,12 @@ void goto_tela_3_2_2(JKSButton &botao_Proximo_3_2) {
 }
 
 void tela_3_2_2() {
+
   tela.fillScreen(TFT_BLACK);
   tela.setCursor(30, 150);
-  tela.setTextColor(TFT_WHITE);
-  tela.setTextSize(2);
-  tela.print("Escolha a tecla");
-  botao[0].init(&tela, &touch, 180, 300, 120, 30, TFT_BLACK, TFT_RED,
-                TFT_WHITE, "Proximo", 2);
-  botao[0].setPressHandler(goto_tela_3_2_3);
-  totalBotoesNaTela = 1;
+  tela.println("Aproxime a tecla \n desejada");
+  delay(200);
+  desenharBotoes();
 }
 
 void goto_tela_3_2_3(JKSButton &botao_Proximo_3_2_2) {
@@ -501,6 +574,17 @@ void tela_3_2_3() {
   totalBotoesNaTela = 2;
 }
 
+void apertarBotaoControle(JKSButton &botao) {
+  tela.fillScreen(TFT_BLACK);
+  parametroAtual = botao.parameter;
+  idx_tela = Tela_3_2_4;
+  totalBotoesNaTela = 0;
+
+  tela.fillScreen(TFT_BLACK);
+  tela.setCursor(30, 150);
+  tela.println("Aperta a tecla \n no controle...");
+}
+
 
 void readDir(const char *caminho) {
   strcpy(nomePasta, caminho);
@@ -519,7 +603,7 @@ void readDir(const char *caminho) {
     if (totalBotoesNaTela >= 20) break;
     if (!entrada.isDirectory()) {
       entrada.getName(caminhoarq[totalBotoesNaTela], sizeof(caminhoarq[totalBotoesNaTela]));
-      int y = 50 + totalBotoesNaTela * 50;
+      int y = 30 + totalBotoesNaTela * 35;
       botao[totalBotoesNaTela].init(&tela, &touch, 100, y, 140, 30, TFT_WHITE, TFT_RED, TFT_BLACK, caminhoarq[totalBotoesNaTela], 2);
       botao[totalBotoesNaTela].setPressHandler([](JKSButton &btn) {
         if (idx_tela == Tela_2_1) {
@@ -702,8 +786,7 @@ void readJsonFile(JKSButton &button) {
                       TFT_WHITE, "Terminar", 2);
         botao[0].setPressHandler(goto_tela_1);
 
-        for (int i = 0; i < sizeof(lista_teclas) / sizeof(lista_teclas[0]); i++) 
-        {
+        for (int i = 0; i < sizeof(lista_teclas) / sizeof(lista_teclas[0]); i++) {
 
           String tecla_layoutGeneral = lista_teclas[i].nome;
           String tecla_layoutRemote = layoutChunk[0];
@@ -736,7 +819,7 @@ void readJsonFile(JKSButton &button) {
             }
 
             else {
-              botao[totalBotoesNaTela].init(&tela, &touch, x, y, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, tecla_layoutGeneral.c_str(), 2); 
+              botao[totalBotoesNaTela].init(&tela, &touch, x, y, 40, 40, TFT_BLACK, TFT_WHITE, TFT_BLACK, tecla_layoutGeneral.c_str(), 2);
             }
 
             botao[totalBotoesNaTela].parameter = address;
@@ -889,4 +972,3 @@ uint8_t showBMP(char *nm, int x, int y) {
   bmpFile.close();
   return (ret);
 }
-
